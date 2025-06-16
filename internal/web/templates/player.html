@@ -1,0 +1,15 @@
+{{define "content"}}
+<section class="video-player">
+    <h2>{{.Video.Title}}</h2>
+    <p>{{.Video.Description}}</p>
+    
+    <div class="player-container">
+        <video id="main-video" controls>
+            <source src="/videos/{{.Video.ID}}" type="video/mp4">
+            Tu navegador no soporta la reproducción de video.
+        </video>
+    </div>
+    
+    <script src="/static/js/player.js"></script>
+</section>
+{{end}}

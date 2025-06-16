@@ -1,1 +1,0 @@
-//Transcodificacion con FFmpeg
