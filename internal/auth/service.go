@@ -1,3 +1,4 @@
+// logica de Autenticacion
 package auth
 
 import (
@@ -5,11 +6,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang-jwt/jwt"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/golang-jwt/jwt" //Implementación de JSON Web Tokens
+	"golang.org/x/crypto/bcrypt" //Algoritmo para hashear contraseñas 
 )
 
-// AuthService maneja la lógica de autenticación
+// Estructura del Servicio
 type AuthService struct {
 	store UserStore
 }

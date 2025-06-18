@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/gorilla/mux"
-	"streamvault/internal/auth"
+	"github.com/gorilla/mux"          // Enrutador HTTP poderoso
+	"streamvault/internal/auth"      // Tu paquete de autenticación
 )
 
 func main() {
