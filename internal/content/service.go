@@ -15,12 +15,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// VideoService maneja las operaciones con videos
-type VideoService struct {
-	storagePath   string
-	encryptionKey []byte
-}
-
 // NewVideoService crea un nuevo servicio de videos
 func NewVideoService(storagePath string, encryptionKey string) (*VideoService, error) {
 	if len(encryptionKey) != 32 {

@@ -2,7 +2,6 @@ package content
 
 import (
 	"io"
-	"time"
 )
 
 // VideoMetadata contiene metadatos de videos
@@ -32,4 +31,10 @@ type Transcoder interface {
 type EncryptionService interface {
 	EncryptFile(inputPath, outputPath string) error
 	DecryptStream(r io.Reader, w io.Writer) error
+}
+
+// VideoService maneja las operaciones con videos
+type VideoService struct {
+	storagePath   string
+	encryptionKey []byte
 }

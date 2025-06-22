@@ -4,6 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"errors"
 	"io"
 	"os"
 )
@@ -76,21 +77,21 @@ func (s *AESEncryptionService) DecryptStream(r io.Reader, w io.Writer) error {
 		if n > 0 {
 			// Descifrar el chunk
 			stream.XORKeyStream(buf[:n], buf[:n])
-			
+
 			// Escribir datos descifrados
 			if _, err := w.Write(buf[:n]); err != nil {
 				return err
 			}
 		}
-		
+
 		if err == io.EOF {
 			break
 		}
-		
+
 		if err != nil {
 			return err
 		}
 	}
-	
+
 	return nil
 }
