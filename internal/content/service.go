@@ -1,19 +1,23 @@
 package content
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"os"
 	"path/filepath"
-    "strings"
+
 	"github.com/google/uuid"
 )
 
 // VideoService maneja las operaciones con videos
 type VideoService struct {
-	storagePath string
+	storagePath   string
 	encryptionKey []byte
 }
 
@@ -22,28 +26,11 @@ func NewVideoService(storagePath string, encryptionKey string) (*VideoService, e
 	if len(encryptionKey) != 32 {
 		return nil, errors.New("la clave de cifrado debe tener 32 bytes")
 	}
-	
+
 	return &VideoService{
 		storagePath:   storagePath,
 		encryptionKey: []byte(encryptionKey),
 	}, nil
-}
-
-// VideoMetadata contiene metadatos de videos
-type VideoMetadata struct {
-	ID          string `json:"id"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	OwnerID     string `json:"owner_id"`
-	FilePath    string `json:"file_path"` // Ruta relativa del video cifrado
-	CreatedAt   string `json:"created_at"`
-}
-
-// VideoStore define la interfaz para almacenamiento de metadatos de videos
-type VideoStore interface {
-	SaveMetadata(metadata *VideoMetadata) error
-	GetVideoMetadata(id string) (*VideoMetadata, error)
-	ListVideos(userID string) ([]*VideoMetadata, error)
 }
 
 // UploadVideo procesa y almacena un nuevo video
@@ -54,7 +41,7 @@ func (s *VideoService) UploadVideo(
 ) error {
 	// Generar ID único
 	metadata.ID = uuid.New().String()
-	
+
 	// Crear directorio estructurado: /año/mes/día/id_video/
 	dirPath := filepath.Join(s.storagePath, metadata.ID)
 	if err := os.MkdirAll(dirPath, 0755); err != nil {
@@ -77,7 +64,6 @@ func (s *VideoService) UploadVideo(
 	// Transcodificar a HLS
 	hlsPath := filepath.Join(dirPath, "hls")
 	if err := s.transcoder.Transcode(encryptedPath, hlsPath); err != nil {
-		return nil, fmt.Errorf("error en transcodificación: %w", err)
 	}
 	metadata.HLSPlaylist = filepath.Join(hlsPath, "playlist.m3u8")
 	// Limpiar archivo temporal
@@ -174,7 +160,7 @@ func (s *VideoService) decryptStream(r io.Reader, w io.Writer) error {
 func transcodeToHLS(inputPath, outputDir string) error {
 	// En producción usaríamos ffmpeg:
 	// ffmpeg -i input.mp4 -codec: copy -start_number 0 -hls_time 10 -hls_list_size 0 -f hls output.m3u8
-	
+
 	// Simulación: crear archivos HLS de ejemplo
 	os.Mkdir(outputDir, 0755)
 	playlist := `#EXTM3U
