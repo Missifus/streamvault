@@ -1,9 +1,6 @@
 {{define "content"}}
 <section class="auth-form">
     <h2>Registro</h2>
-    {{if .Error}}
-        <p class="error">{{.Error}}</p>
-    {{end}}
     <form action="/register" method="post">
         <div class="form-group">
             <label for="email">Email:</label>

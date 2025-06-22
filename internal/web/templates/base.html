@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{.Title}} - Streaming Platform</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <title>{{.Title}} - StreamVault</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <header>
-        <h1>Streaming Platform</h1>
+        <h1>StreamVault</h1>
         <nav>
             {{if .User}}
                 <span>Hola, {{.User.Email}}</span>
@@ -21,10 +21,13 @@
         </nav>
     </header>
     <main>
+        {{if .Error}}
+            <div class="error">{{.Error}}</div>
+        {{end}}
         {{template "content" .}}
     </main>
     <footer>
-        <p>&copy; 2025 Streaming Platform</p>
+        <p>&copy; 2025 StreamVault</p>
     </footer>
 </body>
 </html>

@@ -4,8 +4,8 @@ import (
 	"log"
 	"net/http"
 
-	"tuproyecto/internal/auth"
-	"tuproyecto/internal/content"
+	"streamvault/internal/auth"
+	"streamvault/internal/content"
 )
 
 type WebServer struct {

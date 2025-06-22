@@ -3,40 +3,44 @@ package main
 import (
 	"log"
 	"net/http"
-
-	"github.com/gorilla/mux"          // Enrutador HTTP poderoso
-	"streamvault/internal/auth"      // Tu paquete de autenticación
+	
+	"streamvault/internal/auth"
+	"streamvault/internal/content"
+	"streamvault/internal/web"
 )
 
 func main() {
-	// Configurar almacenamiento
-	store := auth.NewMemoryUserStore()
+	// Configurar servicios
+	authStore := auth.NewMemoryUserStore()
+	authService := auth.NewAuthService(authStore)
 	
-	// Crear servicio de autenticación
-	authService := auth.NewAuthService(store)
+	// Registrar usuario administrador de ejemplo
+	if err := authService.Register("admin@streamvault.com", "AdminPass123!", "admin"); err != nil {
+		log.Printf("Error registrando admin: %v", err)
+	}
+	authService.VerifyEmail("admin@streamvault.com")
 	
-	// Crear manejadores HTTP
-	authHandlers := auth.NewAuthHandlers(authService)
+	// Configurar servicio de contenido
+	contentStore := content.NewMemoryVideoStore()
+	contentService, err := content.NewVideoService(content.VideoServiceConfig{
+		StoragePath:   "./videos",
+		MetadataStore: contentStore,
+		Transcoder:    &content.MockTranscoder{},
+		EncryptionKey: "clave-secreta-de-32-bytes-123456",
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
 	
-	// Configurar router
-	router := mux.NewRouter()
+	// Configurar servidor web
+	webHandlers, err := web.NewWebHandlers(authService, contentService)
+	if err != nil {
+		log.Fatal(err)
+	}
 	
-	// Rutas públicas
-	router.HandleFunc("/register", authHandlers.RegisterHandler).Methods("POST")
-	router.HandleFunc("/login", authHandlers.LoginHandler).Methods("POST")
-	router.HandleFunc("/verify", authHandlers.VerifyHandler).Methods("GET")
+	router := web.NewRouter(webHandlers)
 	
-	// Ruta protegida para usuarios normales
-	protectedRouter := router.PathPrefix("/protected").Subrouter()
-	protectedRouter.Use(authService.AuthMiddleware(""))
-	protectedRouter.HandleFunc("", authHandlers.ProtectedHandler).Methods("GET")
-	
-	// Ruta solo para administradores
-	adminRouter := router.PathPrefix("/admin").Subrouter()
-	adminRouter.Use(authService.AuthMiddleware("admin"))
-	adminRouter.HandleFunc("", authHandlers.AdminHandler).Methods("GET")
-	
-	// Mensaje de inicio
-	log.Println("Servidor de autenticación iniciado en :8080")
+	// Iniciar servidor
+	log.Println("Servidor iniciado en http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", router))
 }

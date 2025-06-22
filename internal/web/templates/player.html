@@ -4,12 +4,14 @@
     <p>{{.Video.Description}}</p>
     
     <div class="player-container">
-        <video id="main-video" controls>
-            <source src="/videos/{{.Video.ID}}" type="video/mp4">
+        <video controls>
+            <source src="/videos/stream/{{.Video.ID}}" type="video/mp4">
             Tu navegador no soporta la reproducción de video.
         </video>
     </div>
     
-    <script src="/static/js/player.js"></script>
+    <div class="video-actions">
+        <a href="/videos">Volver a la lista</a>
+    </div>
 </section>
 {{end}}

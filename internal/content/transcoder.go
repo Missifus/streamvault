@@ -2,7 +2,6 @@ package content
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -54,7 +53,36 @@ func (t *FFmpegTranscoder) Transcode(inputPath, outputDir string) error {
 type MockTranscoder struct{}
 
 func (t *MockTranscoder) Transcode(inputPath, outputDir string) error {
-	// Simulación: crear archivos HLS de ejemplo
-	// ...
+	// Crear directorio de salida
+	if err := os.MkdirAll(outputDir, 0755); err != nil {
+		return fmt.Errorf("no se pudo crear directorio HLS: %w", err)
+	}
+
+	// Crear archivo playlist.m3u8
+	playlistPath := filepath.Join(outputDir, "playlist.m3u8")
+	playlistContent := `#EXTM3U
+#EXT-X-VERSION:3
+#EXT-X-TARGETDURATION:10
+#EXT-X-MEDIA-SEQUENCE:0
+#EXTINF:10.000000,
+segment0.ts
+#EXTINF:10.000000,
+segment1.ts
+#EXT-X-ENDLIST`
+
+	if err := os.WriteFile(playlistPath, []byte(playlistContent), 0644); err != nil {
+		return fmt.Errorf("error al crear playlist: %w", err)
+	}
+
+	// Crear segmentos simulados
+	for i := 0; i < 2; i++ {
+		segmentPath := filepath.Join(outputDir, fmt.Sprintf("segment%d.ts", i))
+		content := fmt.Sprintf("Segmento simulado #%d para %s", i, filepath.Base(inputPath))
+		
+		if err := os.WriteFile(segmentPath, []byte(content), 0644); err != nil {
+			return fmt.Errorf("error al crear segmento %d: %w", i, err)
+		}
+	}
+
 	return nil
 }

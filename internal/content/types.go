@@ -11,7 +11,7 @@ type VideoMetadata struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	OwnerID     string `json:"owner_id"`
-	FilePath    string `json:"file_path"` // Ruta relativa del video cifrado
+	FilePath    string `json:"file_path"`
 	HLSPlaylist string `json:"hls_playlist"`
 	CreatedAt   string `json:"created_at"`
 }

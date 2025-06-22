@@ -1,18 +1,13 @@
 package content
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"mime/multipart"
 	"os"
 	"path/filepath"
-	"strings"
-
+    "strings"
 	"github.com/google/uuid"
 )
 
@@ -81,10 +76,10 @@ func (s *VideoService) UploadVideo(
 
 	// Transcodificar a HLS
 	hlsPath := filepath.Join(dirPath, "hls")
-	if err := transcodeToHLS(encryptedPath, hlsPath); err != nil {
-		return fmt.Errorf("error en transcodificación: %w", err)
+	if err := s.transcoder.Transcode(encryptedPath, hlsPath); err != nil {
+		return nil, fmt.Errorf("error en transcodificación: %w", err)
 	}
-
+	metadata.HLSPlaylist = filepath.Join(hlsPath, "playlist.m3u8")
 	// Limpiar archivo temporal
 	os.Remove(tempPath)
 
@@ -93,18 +88,22 @@ func (s *VideoService) UploadVideo(
 
 // StreamVideo entrega el video para transmisión
 func (s *VideoService) StreamVideo(videoID string, w io.Writer) error {
-	metadata, err := videoStore.GetVideoMetadata(videoID)
+	metadata, err := s.metadataStore.GetVideoMetadata(videoID) // Corregido: s.metadataStore
 	if err != nil {
-		return err
+		return fmt.Errorf("error obteniendo metadatos: %w", err)
 	}
 
 	file, err := os.Open(metadata.FilePath)
 	if err != nil {
-		return err
+		return fmt.Errorf("error abriendo archivo: %w", err)
 	}
 	defer file.Close()
 
-	return s.decryptStream(file, w)
+	if err := s.encryptionService.DecryptStream(file, w); err != nil {
+		return fmt.Errorf("error descifrando stream: %w", err)
+	}
+
+	return nil
 }
 
 // --- Funciones auxiliares ---
