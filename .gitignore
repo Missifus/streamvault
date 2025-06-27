@@ -1,0 +1,25 @@
+# Archivos binarios y ejecutables compilados
+# El nombre puede variar según tu sistema operativo (ej. main.exe en Windows)
+main 
+
+# Directorio que contiene los videos subidos.
+# ¡Nunca subas contenido de usuarios a tu repositorio!
+/uploads/
+
+# Archivo de variables de entorno locales.
+# Este archivo contiene secretos y no debe estar en el control de versiones.
+.env
+
+# Archivos de caché y configuración del editor
+.vscode/
+.idea/
+
+# Directorio de dependencias de Go (si usas 'go mod vendor')
+/vendor/
+
+# Archivos de log
+*.log
+
+# Archivos de sistema operativo
+.DS_Store
+Thumbs.db

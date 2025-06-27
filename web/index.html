@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamVault - Plataforma de Streaming</title>
+    <!-- Incluimos Tailwind CSS para un diseño limpio y rápido -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        html { scroll-behavior: smooth; }
+        /* Transición suave para mostrar y ocultar secciones */
+        .page-section { display: none; }
+        .page-section.active { display: block; }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <!-- BARRA DE NAVEGACIÓN -->
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="container mx-auto px-6 py-3 flex justify-between items-center">
+            <a href="#catalog" class="text-2xl font-bold text-indigo-600">StreamVault</a>
+            <div class="space-x-4">
+                <a href="#catalog" class="nav-link text-gray-600 hover:text-indigo-600">Catálogo</a>
+                <a href="#upload" id="upload-link" class="nav-link text-gray-600 hover:text-indigo-600 hidden">Subir Video</a>
+                <a href="#login" id="login-link" class="nav-link text-gray-600 hover:text-indigo-600">Login</a>
+                <a href="#register" id="register-link" class="nav-link text-gray-600 hover:text-indigo-600">Registro</a>
+                <a href="#" id="logout-link" class="nav-link text-gray-600 hover:text-indigo-600 hidden">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container mx-auto p-4 md:p-8 max-w-4xl">
+        
+        <!-- SECCIÓN DE LOGIN -->
+        <section id="login-section" class="page-section bg-white p-6 rounded-lg shadow-md mb-10">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4 border-b pb-2">Iniciar Sesión</h2>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label for="login-username" class="block text-sm font-medium text-gray-600 mb-1">Usuario</label>
+                    <input type="text" id="login-username" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                </div>
+                <div>
+                    <label for="login-password" class="block text-sm font-medium text-gray-600 mb-1">Contraseña</label>
+                    <input type="password" id="login-password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700">Entrar</button>
+            </form>
+        </section>
+
+        <!-- SECCIÓN DE REGISTRO -->
+        <section id="register-section" class="page-section bg-white p-6 rounded-lg shadow-md mb-10">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4 border-b pb-2">Crear Cuenta</h2>
+            <form id="registerForm" class="space-y-4">
+                 <div>
+                    <label for="register-username" class="block text-sm font-medium text-gray-600 mb-1">Usuario</label>
+                    <input type="text" id="register-username" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                </div>
+                <div>
+                    <label for="register-password" class="block text-sm font-medium text-gray-600 mb-1">Contraseña</label>
+                    <input type="password" id="register-password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700">Registrarse</button>
+            </form>
+        </section>
+        
+        <!-- SECCIÓN PARA SUBIR VIDEOS (ADMIN) -->
+        <section id="upload-section" class="page-section bg-white p-6 rounded-lg shadow-md mb-10">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4 border-b pb-2">Subir Nuevo Video</h2>
+            <form id="uploadForm" class="space-y-4">
+                <div>
+                    <label for="title" class="block text-sm font-medium text-gray-600 mb-1">Título del Video</label>
+                    <input type="text" id="title" class="w-full px-3 py-2 border border-gray-300 rounded-md" required>
+                </div>
+                <div>
+                    <label for="category" class="block text-sm font-medium text-gray-600 mb-1">Categoría</label>
+                    <input type="text" id="category" class="w-full px-3 py-2 border border-gray-300 rounded-md" required>
+                </div>
+                <div>
+                    <label for="videoFile" class="block text-sm font-medium text-gray-600 mb-1">Archivo de Video</label>
+                    <input type="file" id="videoFile" name="videoFile" class="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100" required>
+                </div>
+                <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-md hover:bg-indigo-700">Subir Video</button>
+            </form>
+        </section>
+
+        <!-- SECCIÓN DEL CATÁLOGO DE VIDEOS -->
+        <section id="catalog-section" class="page-section">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4 border-b pb-2">Catálogo Principal</h2>
+            <div id="videoList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Los videos se insertarán aquí dinámicamente -->
+            </div>
+        </section>
+
+        <!-- CONTENEDOR GLOBAL DE NOTIFICACIONES -->
+        <div id="notification" class="fixed bottom-5 right-5 w-80 p-4 rounded-lg shadow-lg text-white transition-opacity duration-300 opacity-0"></div>
+        
+    </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const API_BASE_URL = 'http://localhost:8080';
+            
+            const sections = document.querySelectorAll('.page-section');
+            const notification = document.getElementById('notification');
+            const videoList = document.getElementById('videoList');
+            const uploadLink = document.getElementById('upload-link');
+            const loginLink = document.getElementById('login-link');
+            const registerLink = document.getElementById('register-link');
+            const logoutLink = document.getElementById('logout-link');
+
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const uploadForm = document.getElementById('uploadForm');
+
+            let appState = {
+                token: localStorage.getItem('authToken') || null,
+                role: localStorage.getItem('userRole') || null,
+            };
+
+            const showNotification = (message, isError = false) => {
+                notification.textContent = message;
+                notification.className = `fixed bottom-5 right-5 w-80 p-4 rounded-lg shadow-lg text-white transition-opacity duration-300 ${isError ? 'bg-red-500' : 'bg-green-500'}`;
+                notification.classList.remove('opacity-0');
+                setTimeout(() => notification.classList.add('opacity-0'), 3000);
+            };
+
+            const showSection = (sectionId) => {
+                sections.forEach(section => {
+                    section.classList.toggle('active', section.id === sectionId);
+                });
+            };
+            
+            const router = () => {
+                const hash = window.location.hash || '#catalog';
+                const sectionId = hash.substring(1) + '-section';
+                
+                const targetSection = document.getElementById(sectionId);
+                if (targetSection) {
+                    showSection(sectionId);
+                } else {
+                    showSection('catalog-section'); // Página por defecto si la ruta no existe
+                }
+            };
+
+            const updateUI = () => {
+                if (appState.token) {
+                    loginLink.style.display = 'none';
+                    registerLink.style.display = 'none';
+                    logoutLink.style.display = 'inline-block';
+                    if (appState.role === 'admin') {
+                        uploadLink.style.display = 'inline-block';
+                    }
+                } else {
+                    loginLink.style.display = 'inline-block';
+                    registerLink.style.display = 'inline-block';
+                    logoutLink.style.display = 'none';
+                    uploadLink.style.display = 'none';
+                }
+            };
+            
+            const parseJwt = (token) => {
+                try {
+                    return JSON.parse(atob(token.split('.')[1]));
+                } catch (e) {
+                    return null;
+                }
+            };
+
+            logoutLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                appState.token = null;
+                appState.role = null;
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('userRole');
+                updateUI();
+                window.location.hash = '#catalog';
+                showNotification('Has cerrado sesión.');
+            });
+
+            const handleRequest = async (url, options) => {
+                try {
+                    const response = await fetch(url, options);
+                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(data.error || data.message || `Error ${response.status}`);
+                    }
+                    return data;
+                } catch (error) {
+                    showNotification(error.message, true);
+                    console.error('API Error:', error);
+                    throw error;
+                }
+            };
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const username = document.getElementById('login-username').value;
+                const password = document.getElementById('login-password').value;
+                try {
+                    const data = await handleRequest(`${API_BASE_URL}/login`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password })
+                    });
+                    const decodedToken = parseJwt(data.token);
+                    appState.token = data.token;
+                    appState.role = decodedToken.role;
+                    localStorage.setItem('authToken', appState.token);
+                    localStorage.setItem('userRole', appState.role);
+                    updateUI();
+                    window.location.hash = '#catalog';
+                    showNotification('¡Bienvenido!');
+                    loginForm.reset();
+                } catch (error) {}
+            });
+
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const username = document.getElementById('register-username').value;
+                const password = document.getElementById('register-password').value;
+                try {
+                    await handleRequest(`${API_BASE_URL}/register`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password })
+                    });
+                    showNotification('Registro exitoso. Ahora puedes iniciar sesión.');
+                    window.location.hash = '#login';
+                    registerForm.reset();
+                } catch (error) {}
+            });
+
+            uploadForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData();
+                formData.append('title', document.getElementById('title').value);
+                formData.append('category', document.getElementById('category').value);
+                formData.append('video', document.getElementById('videoFile').files[0]);
+
+                try {
+                    await handleRequest(`${API_BASE_URL}/admin/upload`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${appState.token}` },
+                        body: formData
+                    });
+                    showNotification('Video subido exitosamente.');
+                    uploadForm.reset();
+                    fetchVideos();
+                    window.location.hash = '#catalog';
+                } catch (error) {}
+            });
+
+            const fetchVideos = async () => {
+                try {
+                    const videos = await handleRequest(`${API_BASE_URL}/videos`, { method: 'GET' });
+                    videoList.innerHTML = '';
+                    if (videos && videos.length > 0) {
+                        videos.forEach(video => {
+                            const videoElement = document.createElement('div');
+                            videoElement.className = 'bg-white rounded-lg shadow-md overflow-hidden';
+                            videoElement.innerHTML = `
+                                <video controls class="w-full h-auto" preload="metadata">
+                                    <source src="${API_BASE_URL}/stream/${video.file_path}" type="video/mp4">
+                                    Tu navegador no soporta la etiqueta de video.
+                                </video>
+                                <div class="p-4">
+                                    <h3 class="font-bold text-lg text-gray-800">${video.title}</h3>
+                                    <p class="text-sm text-gray-500 mt-1">Categoría: ${video.category}</p>
+                                </div>
+                            `;
+                            videoList.appendChild(videoElement);
+                        });
+                    } else {
+                        videoList.innerHTML = '<p class="text-gray-500 col-span-full text-center">No hay videos disponibles.</p>';
+                    }
+                } catch (error) {
+                    videoList.innerHTML = `<p class="text-red-500 col-span-full text-center">No se pudieron cargar los videos.</p>`;
+                }
+            };
+            
+            // Inicialización de la aplicación
+            window.addEventListener('hashchange', router);
+            router(); // Maneja la ruta inicial al cargar la página
+            updateUI();
+            fetchVideos();
+        });
+    </script>
+</body>
+</html>
