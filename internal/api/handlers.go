@@ -1,17 +1,13 @@
-// File: internal/api/handlers.go
+// El paquete 'api' contiene toda la lógica relacionada con el manejo de las
+// peticiones HTTP, la definición de las rutas y las respuestas al cliente.
 package api
 
 import (
-	"bytes"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"io"
 	"log"
 	"net/http"
-	"net/smtp"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -23,279 +19,192 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// handler es una estructura que contiene las dependencias de la aplicación,
-// en este caso, la estructura 'App' que tiene el acceso a la base de datos y la configuración.
+// handler es una estructura que encapsula la aplicación.
+// Los métodos de esta estructura (los manejadores) tendrán acceso a todas las dependencias de App.
 type handler struct {
 	app *App
 }
 
-// --- FUNCIONES AUXILIARES ---
+// --- FUNCIONES AUXILIARES DE RESPUESTA ---
 
-// generateSecureToken crea una cadena de texto aleatoria y segura para usarla como token.
-// Es importante usar crypto/rand para asegurar que el token sea criptográficamente impredecible.
-func generateSecureToken(length int) string {
-	b := make([]byte, length)
-	if _, err := rand.Read(b); err != nil {
-		// Si falla la generación de aleatoriedad, es un problema serio.
-		// Devolvemos una cadena vacía para manejar el error.
-		return ""
-	}
-	return hex.EncodeToString(b)
+// respondWithError es una función auxiliar para enviar respuestas de error estandarizadas en formato JSON.
+// Esto asegura que el frontend siempre reciba un JSON válido, incluso si hay un error.
+func respondWithError(w http.ResponseWriter, code int, message string) {
+	respondWithJSON(w, code, map[string]string{"message": message})
 }
 
-// sendVerificationEmail construye y envía el email de verificación usando una plantilla HTML.
-func sendVerificationEmail(user *models.User, token string) error {
-	// 1. Lee las credenciales y URLs desde las variables de entorno para mayor seguridad.
-	smtpHost := os.Getenv("SMTP_HOST")
-	smtpPort := os.Getenv("SMTP_PORT")
-	smtpUser := os.Getenv("SMTP_USER")
-	smtpPass := os.Getenv("SMTP_PASS")
-	frontendURL := os.Getenv("FRONTEND_URL")
+// respondWithJSON es una función auxiliar para serializar el payload y enviarlo como una respuesta JSON.
+func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
+	response, _ := json.Marshal(payload)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+	w.Write(response)
+}
 
-	// 2. Construye el enlace de verificación único para el usuario.
-	verificationLink := fmt.Sprintf("%s#verify?token=%s", frontendURL, token)
+// --- FUNCIÓN AUXILIAR PARA TAREAS EN SEGUNDO PLANO ---
 
-	// 3. Define los datos que se insertarán en los marcadores de la plantilla HTML.
-	data := struct {
-		Username         string
-		VerificationLink string
-	}{
-		Username:         user.Username,
-		VerificationLink: verificationLink,
-	}
-
-	// 4. Lee y procesa el archivo de la plantilla HTML.
-	t, err := template.ParseFiles("templates/verification_email.html")
-	if err != nil {
-		log.Printf("Error al parsear la plantilla de email: %v", err)
-		return err
-	}
-
-	// 5. Prepara el cuerpo del correo en un buffer para un manejo eficiente de la memoria.
-	var body bytes.Buffer
-	// Se definen las cabeceras para que los clientes de correo lo interpreten como HTML.
-	mimeHeaders := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
-	body.Write([]byte(fmt.Sprintf("Subject: Verifica tu cuenta en StreamVault\r\n%s", mimeHeaders)))
-
-	// Ejecuta la plantilla, rellenando los datos (Username y VerificationLink).
-	if err := t.Execute(&body, data); err != nil {
-		log.Printf("Error al ejecutar la plantilla de email: %v", err)
-		return err
-	}
-
-	// 6. Se autentica con el servidor SMTP y envía el correo.
-	auth := smtp.PlainAuth("", smtpUser, smtpPass, smtpHost)
-	err = smtp.SendMail(smtpHost+":"+smtpPort, auth, smtpUser, []string{user.Email}, body.Bytes())
-	if err != nil {
-		log.Printf("Error al enviar email a %s: %v", user.Email, err)
-		return err
-	}
-
-	log.Printf("Email de verificación con plantilla HTML enviado a %s", user.Email)
-	return nil
+// processVideoInBackground simula una tarea de larga duración que se ejecuta en segundo plano.
+// Es nuestra demostración del concepto de CONCURRENCIA.
+func processVideoInBackground(videoID int) {
+	// Se registra el inicio de la tarea en la consola del servidor.
+	log.Printf("[Video ID: %d] Iniciando procesamiento en segundo plano (ej: generar miniaturas)...", videoID)
+	// time.Sleep simula una tarea que consume tiempo, como podría ser la transcodificación de un video
+	// o la generación de diferentes calidades.
+	time.Sleep(10 * time.Second)
+	// Se registra la finalización de la tarea.
+	log.Printf("[Video ID: %d] ...Procesamiento en segundo plano finalizado.", videoID)
 }
 
 // --- HANDLERS DE AUTENTICACIÓN Y USUARIOS ---
 
 // HandleRegisterUser procesa el registro de un nuevo usuario.
 func (h *handler) HandleRegisterUser(w http.ResponseWriter, r *http.Request) {
-	// 1. Decodifica el cuerpo de la petición JSON en un struct de Usuario.
 	var user models.User
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
-		http.Error(w, "Request inválido", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Request inválido")
 		return
 	}
-	// 2. Valida que los campos necesarios no estén vacíos.
 	if user.Username == "" || user.Email == "" || user.Password == "" {
-		http.Error(w, "Faltan campos obligatorios", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Faltan campos obligatorios")
 		return
 	}
-	// 3. Hashea la contraseña del usuario con bcrypt. NUNCA se debe guardar una contraseña en texto plano.
-	// bcrypt es seguro porque es lento y resistente a ataques de fuerza bruta.
+	// Hashea la contraseña del usuario con bcrypt. NUNCA se debe guardar una contraseña en texto plano.
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	user.Password = string(hashedPassword)
-
-	// 4. Asigna valores por defecto al nuevo usuario.
 	user.Role = "user"
-	user.IsVerified = false
-	user.VerificationToken = generateSecureToken(32)
 
-	// 5. Usa la interfaz DataStore para crear el usuario. El handler no sabe qué base de datos se usa (abstracción).
+	// Usa la interfaz DataStore para crear el usuario. El handler no sabe qué base de datos se usa (abstracción).
 	if err := h.app.Store.CreateUser(&user); err != nil {
-		http.Error(w, "El email o nombre de usuario ya está en uso", http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, "El email o nombre de usuario ya está en uso")
 		return
 	}
-
-	// 6. Ejecuta el envío de email en una goroutine (concurrencia).
-	// Esto permite que la respuesta al usuario sea inmediata, sin esperar a que el email se envíe.
-	go sendVerificationEmail(&user, user.VerificationToken)
-
-	// 7. Responde al cliente con un mensaje de éxito.
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "Registro exitoso. Por favor, revisa tu email para verificar tu cuenta.",
-	})
+	respondWithJSON(w, http.StatusCreated, map[string]string{"message": "Registro exitoso. ¡Ahora puedes iniciar sesión!"})
 }
 
-// HandleLoginUser procesa el inicio de sesión.
+// HandleLoginUser procesa el inicio de sesión de un usuario existente.
 func (h *handler) HandleLoginUser(w http.ResponseWriter, r *http.Request) {
 	var reqUser models.User
 	if err := json.NewDecoder(r.Body).Decode(&reqUser); err != nil {
-		http.Error(w, "Request inválido", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Request inválido")
 		return
 	}
-
-	// 1. Obtiene el usuario por su email desde la capa de datos.
+	// Obtiene el usuario por su email desde la capa de datos.
 	user, err := h.app.Store.GetUserByEmail(reqUser.Email)
 	if err != nil {
-		http.Error(w, "Email o contraseña incorrectos", http.StatusUnauthorized)
+		respondWithError(w, http.StatusUnauthorized, "Email o contraseña incorrectos")
 		return
 	}
-
-	// 2. Comprueba si la cuenta ha sido verificada. Es una capa de seguridad importante.
-	if !user.IsVerified {
-		http.Error(w, "Tu cuenta no ha sido verificada. Por favor, revisa tu email.", http.StatusForbidden)
-		return
-	}
-
-	// 3. Compara de forma segura la contraseña enviada con el hash guardado en la BD.
+	// Compara de forma segura la contraseña enviada con el hash guardado en la BD.
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(reqUser.Password)); err != nil {
-		http.Error(w, "Email o contraseña incorrectos", http.StatusUnauthorized)
+		respondWithError(w, http.StatusUnauthorized, "Email o contraseña incorrectos")
 		return
 	}
-
-	// 4. Si las credenciales son correctas, crea las "claims" para el token JWT.
-	// Las claims son la información que irá dentro del token.
+	// Si las credenciales son correctas, crea las "claims" para el token JWT.
 	claims := &models.Claims{
 		Username: user.Username,
 		Email:    user.Email,
 		Role:     user.Role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)), // El token expira en 24 horas.
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)),
 		},
 	}
-
-	// 5. Crea y firma el token con la clave secreta.
+	// Crea y firma el token con la clave secreta.
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, _ := token.SignedString([]byte(h.app.JwtSecret))
-
-	// 6. Envía el token al cliente.
-	json.NewEncoder(w).Encode(map[string]string{"token": tokenString})
-}
-
-// HandleVerifyEmail verifica la cuenta del usuario a través del token.
-func (h *handler) HandleVerifyEmail(w http.ResponseWriter, r *http.Request) {
-	var payload struct {
-		Token string `json:"token"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
-		http.Error(w, "Request inválido", http.StatusBadRequest)
-		return
-	}
-
-	// 1. Busca al usuario en la BD usando el token de verificación.
-	user, err := h.app.Store.VerifyUser(payload.Token)
+	tokenString, err := token.SignedString([]byte(h.app.JwtSecret))
 	if err != nil {
-		http.Error(w, "Token de verificación inválido o expirado.", http.StatusUnauthorized)
+		respondWithError(w, http.StatusInternalServerError, "Error interno al generar el token")
 		return
 	}
-
-	// 2. Previene que una cuenta ya verificada se vuelva a verificar.
-	if user.IsVerified {
-		http.Error(w, "Esta cuenta ya ha sido verificada.", http.StatusBadRequest)
-		return
-	}
-
-	// 3. Actualiza el estado del usuario a verificado y limpia el token.
-	if err := h.app.Store.SetUserVerificationStatus(user.ID, true); err != nil {
-		http.Error(w, "No se pudo verificar la cuenta.", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{
-		"message": "¡Cuenta verificada exitosamente! Ahora puedes iniciar sesión.",
-	})
+	// Envía el token al cliente.
+	respondWithJSON(w, http.StatusOK, map[string]string{"token": tokenString})
 }
 
-// --- HANDLERS DE GESTIÓN DE VIDEOS ---
+// --- HANDLERS PÚBLICOS DE VIDEOS ---
 
 // HandleListVideos obtiene y devuelve la lista de todos los videos.
 func (h *handler) HandleListVideos(w http.ResponseWriter, r *http.Request) {
 	videos, err := h.app.Store.GetAllVideos()
 	if err != nil {
-		http.Error(w, "No se pudieron obtener los videos", http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, "No se pudieron obtener los videos")
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(videos)
-}
-
-// HandleUploadVideo maneja la subida de un archivo de video.
-func (h *handler) HandleUploadVideo(w http.ResponseWriter, r *http.Request) {
-	// 1. Parsea el formulario, que puede contener tanto texto como archivos (multipart).
-	// Se establece un límite de tamaño (ej. 50MB) para proteger al servidor.
-	r.ParseMultipartForm(50 << 20)
-
-	// 2. Obtiene el archivo del formulario. "video" es el 'name' del campo en el HTML.
-	file, fileHandler, err := r.FormFile("video")
-	if err != nil {
-		http.Error(w, "Petición inválida: Falta el archivo 'video'", http.StatusBadRequest)
-		return
-	}
-	defer file.Close()
-
-	// 3. Genera un nombre de archivo único para evitar colisiones y guardarlo en el servidor.
-	fileName := fmt.Sprintf("%d_%s", time.Now().UnixNano(), filepath.Base(fileHandler.Filename))
-	filePath := filepath.Join(h.app.UploadDir, fileName)
-
-	// 4. Crea el archivo de destino en el sistema de archivos.
-	dst, _ := os.Create(filePath)
-	defer dst.Close()
-
-	// 5. Copia el contenido del archivo subido al archivo de destino.
-	io.Copy(dst, file)
-
-	// 6. Crea un modelo de video con la información recibida.
-	video := &models.Video{
-		Title:       r.FormValue("title"),
-		Description: r.FormValue("description"),
-		Category:    r.FormValue("category"),
-		FilePath:    fileName,
-	}
-
-	// 7. Guarda los metadatos del video en la base de datos a través de la interfaz.
-	if err := h.app.Store.CreateVideo(video); err != nil {
-		// Si falla la inserción en la BD, eliminamos el archivo físico para no dejar basura.
-		os.Remove(filePath)
-		http.Error(w, "Error al guardar la información del video", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(video)
+	respondWithJSON(w, http.StatusOK, videos)
 }
 
 // HandleGetVideoByID obtiene los detalles de un solo video por su ID.
 func (h *handler) HandleGetVideoByID(w http.ResponseWriter, r *http.Request) {
-	// 1. Obtiene las variables de la URL, en este caso el {id}.
 	vars := mux.Vars(r)
-	// 2. Convierte el ID de string a int.
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "ID de video inválido", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "ID de video inválido")
 		return
 	}
-
-	// 3. Obtiene el video desde la capa de datos.
 	video, err := h.app.Store.GetVideoByID(id)
 	if err != nil {
-		http.Error(w, "Video no encontrado", http.StatusNotFound)
+		respondWithError(w, http.StatusNotFound, "Video no encontrado")
 		return
 	}
+	respondWithJSON(w, http.StatusOK, video)
+}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(video)
+// HandleStreamVideo sirve el contenido de un video para su reproducción.
+func (h *handler) HandleStreamVideo(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	fileName := vars["filename"]
+	videoPath := filepath.Join(h.app.UploadDir, fileName)
+	// http.ServeFile es una función de Go que se encarga de servir un archivo.
+	// Soporta 'Range requests', crucial para que los navegadores puedan buscar (seek) en el video.
+	http.ServeFile(w, r, videoPath)
+}
+
+// --- HANDLERS DE ADMINISTRACIÓN (PROTEGIDOS) ---
+
+// HandleUploadVideo maneja la subida de un archivo de video.
+func (h *handler) HandleUploadVideo(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseMultipartForm(50 << 20); err != nil {
+		respondWithError(w, http.StatusBadRequest, "El archivo es demasiado grande (límite 50MB)")
+		return
+	}
+	title := r.FormValue("title")
+	category := r.FormValue("category")
+	if title == "" || category == "" {
+		respondWithError(w, http.StatusBadRequest, "Faltan los campos 'title' o 'category'")
+		return
+	}
+	file, fileHandler, err := r.FormFile("video")
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Petición inválida: Falta el archivo con la clave 'video'")
+		return
+	}
+	defer file.Close()
+	// Genera un nombre de archivo único para evitar colisiones.
+	fileName := fmt.Sprintf("%d_%s", time.Now().UnixNano(), filepath.Base(fileHandler.Filename))
+	filePath := filepath.Join(h.app.UploadDir, fileName)
+	dst, err := os.Create(filePath)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Error interno al guardar el archivo")
+		return
+	}
+	defer dst.Close()
+	if _, err := io.Copy(dst, file); err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Error interno al procesar el archivo")
+		return
+	}
+	video := &models.Video{
+		Title:       title,
+		Description: r.FormValue("description"),
+		Category:    category,
+		FilePath:    fileName,
+	}
+	// Guarda los metadatos en la base de datos a través de la interfaz.
+	if err := h.app.Store.CreateVideo(video); err != nil {
+		os.Remove(filePath) // Limpia el archivo si la BD falla.
+		respondWithError(w, http.StatusInternalServerError, "Error al guardar la información del video")
+		return
+	}
+	// Inicia una tarea en segundo plano (goroutine) para "procesar" el video.
+	go processVideoInBackground(video.ID)
+	respondWithJSON(w, http.StatusCreated, video)
 }
 
 // HandleUpdateVideo actualiza los detalles de un video existente.
@@ -303,35 +212,20 @@ func (h *handler) HandleUpdateVideo(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "ID de video inválido", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "ID de video inválido")
 		return
 	}
-
-	// 1. Se asegura de que el video a actualizar realmente existe.
-	_, err = h.app.Store.GetVideoByID(id)
-	if err != nil {
-		http.Error(w, "Video no encontrado", http.StatusNotFound)
-		return
-	}
-
-	// 2. Decodifica los nuevos datos del video desde el cuerpo de la petición.
 	var updatedVideo models.Video
 	if err := json.NewDecoder(r.Body).Decode(&updatedVideo); err != nil {
-		http.Error(w, "Request inválido", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "Request inválido")
 		return
 	}
-
-	updatedVideo.ID = id // Se asegura de que el ID sea el correcto.
-
-	// 3. Llama a la capa de datos para realizar la actualización.
+	updatedVideo.ID = id
 	if err := h.app.Store.UpdateVideo(&updatedVideo); err != nil {
-		log.Printf("Error al actualizar video: %v", err)
-		http.Error(w, "Error al actualizar el video", http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, "Error al actualizar el video")
 		return
 	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(updatedVideo)
+	respondWithJSON(w, http.StatusOK, updatedVideo)
 }
 
 // HandleDeleteVideo elimina un video de la base de datos y del sistema de archivos.
@@ -339,33 +233,73 @@ func (h *handler) HandleDeleteVideo(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, "ID de video inválido", http.StatusBadRequest)
+		respondWithError(w, http.StatusBadRequest, "ID de video inválido")
 		return
 	}
-
-	// 1. Importante: Obtiene los datos del video ANTES de borrarlo de la BD
-	// para poder saber el nombre del archivo físico a eliminar.
+	// Obtiene los datos del video ANTES de borrarlo de la BD para saber el nombre del archivo.
 	video, err := h.app.Store.GetVideoByID(id)
 	if err != nil {
-		http.Error(w, "Video no encontrado", http.StatusNotFound)
+		respondWithError(w, http.StatusNotFound, "Video no encontrado")
 		return
 	}
-
-	// 2. Elimina el registro del video de la base de datos.
+	// Elimina el registro de la BD.
 	if err := h.app.Store.DeleteVideo(id); err != nil {
-		log.Printf("Error al eliminar video de la BD: %v", err)
-		http.Error(w, "Error al eliminar el video", http.StatusInternalServerError)
+		respondWithError(w, http.StatusInternalServerError, "Error al eliminar el video")
 		return
 	}
-
-	// 3. Si la eliminación de la BD fue exitosa, elimina el archivo físico.
+	// Si la eliminación de la BD fue exitosa, elimina el archivo físico.
 	filePath := filepath.Join(h.app.UploadDir, video.FilePath)
-	if err := os.Remove(filePath); err != nil {
-		// Este no es un error fatal para el cliente, pero se debe registrar en el log
-		// para que un administrador pueda limpiar el archivo manualmente.
-		log.Printf("ADVERTENCIA: No se pudo eliminar el archivo físico %s: %v", filePath, err)
-	}
+	os.Remove(filePath)
+	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Video eliminado exitosamente"})
+}
 
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"message": "Video eliminado exitosamente"})
+// HandleListAllUsers devuelve una lista de todos los usuarios registrados (solo para admins).
+func (h *handler) HandleListAllUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := h.app.Store.GetAllUsers()
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Error al obtener la lista de usuarios")
+		return
+	}
+	respondWithJSON(w, http.StatusOK, users)
+}
+
+// HandleAdminUpdateUserRole actualiza el rol de un usuario (solo para admins).
+func (h *handler) HandleAdminUpdateUserRole(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "ID de usuario inválido")
+		return
+	}
+	var payload struct {
+		Role string `json:"role"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+		respondWithError(w, http.StatusBadRequest, "Cuerpo de la petición inválido")
+		return
+	}
+	if payload.Role != "user" && payload.Role != "admin" {
+		respondWithError(w, http.StatusBadRequest, "Rol inválido. Debe ser 'user' o 'admin'.")
+		return
+	}
+	if err := h.app.Store.UpdateUserRole(id, payload.Role); err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Error al actualizar el rol del usuario")
+		return
+	}
+	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Rol del usuario actualizado exitosamente"})
+}
+
+// HandleAdminDeleteUser elimina un usuario del sistema (solo para admins).
+func (h *handler) HandleAdminDeleteUser(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "ID de usuario inválido")
+		return
+	}
+	if err := h.app.Store.DeleteUser(id); err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Error al eliminar el usuario")
+		return
+	}
+	respondWithJSON(w, http.StatusOK, map[string]string{"message": "Usuario eliminado exitosamente"})
 }

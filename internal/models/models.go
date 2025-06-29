@@ -7,14 +7,12 @@ import (
 )
 
 type User struct {
-	ID                int       `json:"id"`
-	Username          string    `json:"username"`
-	Email             string    `json:"email"`
-	Password          string    `json:"password,omitempty"`
-	Role              string    `json:"role"`
-	IsVerified        bool      `json:"is_verified"` // Campo para la verificación
-	VerificationToken string    `json:"-"`           // Campo para el token, no se exporta a JSON
-	CreatedAt         time.Time `json:"created_at"`
+	ID        int       `json:"id"`
+	Username  string    `json:"username"`
+	Email     string    `json:"email"`
+	Password  string    `json:"password,omitempty"`
+	Role      string    `json:"role"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 type Video struct {

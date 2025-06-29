@@ -16,8 +16,7 @@ func main() {
 	if err := godotenv.Load(); err != nil {
 		log.Println("Advertencia: No se encontró el archivo .env")
 	}
-
-	// ... (código para cargar variables de entorno es el mismo)
+	// Leemos la nueva variable de entorno.
 	dbUser := os.Getenv("DB_USER")
 	dbPassword := os.Getenv("DB_PASSWORD")
 	dbName := os.Getenv("DB_NAME")
