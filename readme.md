@@ -49,7 +49,7 @@ Asegúrate de tener instalado:
 
 1.  **Clona el repositorio**
     ```sh
-    git clone git clone https://github.com/tu_usuario/streamvault.git
+    git clone https://github.com/tu_usuario/streamvault.git
     ```
 2.  **Configura tu base de datos**
     * Asegúrate de que tu servidor PostgreSQL esté corriendo.
