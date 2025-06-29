@@ -60,4 +60,4 @@ Asegúrate de tener instalado:
     ```
 6.  **Abre el frontend**
     * Navega a la carpeta `web/` y abre `index.html` en tu navegador.
-Made with love by missifus <3
+## Made with love by missifus <3
