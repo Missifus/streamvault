@@ -2,8 +2,8 @@
 package api
 
 import (
-	"database/sql"
 	"net/http"
+	"streamvault/internal/storage"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -12,7 +12,7 @@ import (
 // App contiene las dependencias de la aplicación, como la conexión a la base de datos.
 // Esto facilita las pruebas y la inyección de dependencias.
 type App struct {
-	DB        *sql.DB
+	Store     storage.DataStore // <-- AHORA DEPENDE DE LA INTERFAZ
 	UploadDir string
 	JwtSecret string
 }
@@ -24,35 +24,28 @@ func NewRouter(app *App) http.Handler {
 	// Asignar los manejadores a la App para que tengan acceso a la BD.
 	h := &handler{app: app}
 	m := &middleware{app: app}
-
-	// Rutas públicas
+	// --- Rutas Públicas ---
 	r.HandleFunc("/register", h.HandleRegisterUser).Methods("POST")
 	r.HandleFunc("/login", h.HandleLoginUser).Methods("POST")
+	r.HandleFunc("/verify", h.HandleVerifyEmail).Methods("POST")
 	r.HandleFunc("/videos", h.HandleListVideos).Methods("GET")
+	r.HandleFunc("/videos/{id:[0-9]+}", h.HandleGetVideoByID).Methods("GET") // NUEVA RUTA PÚBLICA
 
-	// Ruta para servir los archivos de video.
 	fileServer := http.StripPrefix("/stream/", http.FileServer(http.Dir(app.UploadDir)))
 	r.PathPrefix("/stream/").Handler(fileServer)
 
-	// Rutas protegidas para administradores
+	// --- Rutas de Administrador Protegidas ---
 	adminRoutes := r.PathPrefix("/admin").Subrouter()
 	adminRoutes.Use(m.AuthMiddleware, m.AdminOnlyMiddleware)
 	adminRoutes.HandleFunc("/upload", h.HandleUploadVideo).Methods("POST")
+	// NUEVAS RUTAS DE ADMIN
+	adminRoutes.HandleFunc("/videos/{id:[0-9]+}", h.HandleUpdateVideo).Methods("PUT")
+	adminRoutes.HandleFunc("/videos/{id:[0-9]+}", h.HandleDeleteVideo).Methods("DELETE")
 
-	// --- CONFIGURACIÓN DE CORS ---
-	// Define de qué orígenes (dominios) se aceptarán las peticiones.
-	// Usamos "*" para permitir desde cualquier origen durante el desarrollo.
-	// "null" es importante para permitir peticiones desde archivos locales (file://).
+	// --- Configuración de CORS ---
 	allowedOrigins := handlers.AllowedOrigins([]string{"*", "null"})
-
-	// Define qué métodos HTTP están permitidos.
-	allowedMethods := handlers.AllowedMethods([]string{"GET", "POST", "OPTIONS"})
-
-	// Define qué cabeceras HTTP puede enviar el cliente.
-	// "Authorization" es crucial para el token JWT. "Content-Type" para los JSON.
+	allowedMethods := handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"})
 	allowedHeaders := handlers.AllowedHeaders([]string{"Authorization", "Content-Type"})
 
-	// Aplicamos el middleware de CORS a nuestro enrutador principal 'r'.
-	// La función handlers.CORS() envuelve nuestro enrutador y maneja las peticiones OPTIONS y añade las cabeceras.
 	return handlers.CORS(allowedOrigins, allowedMethods, allowedHeaders)(r)
 }
