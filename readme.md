@@ -42,7 +42,7 @@ Asegúrate de tener instalado:
 
 1.  **Clona el repositorio**
     ```sh
-    git clone [https://github.com/tu_usuario/streamvault.git](https://github.com/tu_usuario/streamvault.git)
+    git clone https://github.com/tu_usuario/streamvault.git
     ```
 2.  **Configura tu base de datos**
     * Crea una base de datos en PostgreSQL.
@@ -60,4 +60,4 @@ Asegúrate de tener instalado:
     ```
 6.  **Abre el frontend**
     * Navega a la carpeta `web/` y abre `index.html` en tu navegador.
-    Made with love by missifus <3
+Made with love by missifus <3
