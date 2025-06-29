@@ -152,19 +152,19 @@ classDiagram
         +main()
     }
     
-    main_go --> App : "Crea e inyecta dependencias"
-    main_go --> PostgresStore : "Crea la instancia concreta"
+    main_go --> App : "Creates & Injects"
+    main_go --> PostgresStore : "Creates Instance"
     
-    App --> handler : "Es usado por"
-    handler "1" -- "1" App : "Contiene"
+    App --> handler : "Is used by"
+    handler "1" -- "1" App : "Contains"
 
-    App o-- "1" DataStore : "Depende de (Inyección de Dependencia)"
+    App o-- "1" DataStore : "Depends on (DI)"
     
-    PostgresStore --|> DataStore : "Implementa"
+    PostgresStore --|> DataStore : "Implements"
     
-    handler ..> DataStore : "Usa métodos de"
-    PostgresStore ..> User : "Manipula"
-    PostgresStore ..> Video : "Manipula"
+    handler ..> DataStore : "Uses"
+    PostgresStore ..> User : "Manipulates"
+    PostgresStore ..> Video : "Manipulates"
 
     class Frontend_JS["Frontend (JS)"] {
         <<Conceptual>>
@@ -187,12 +187,11 @@ classDiagram
         +renderVideos()
     }
 
-    Frontend_JS o-- "1" app_js : "Orquesta"
-    app_js ..> api_js : "Usa para llamar al backend"
-    app_js ..> ui_js : "Usa para manipular el DOM"
+    Frontend_JS o-- "1" app_js : "Orchestrates"
+    app_js ..> api_js : "Uses"
+    app_js ..> ui_js : "Uses"
 
-    api_js ..> handler : "Realiza peticiones HTTP a"
+    api_js ..> handler : "Makes HTTP requests to"
     
-    ```
-
-## Made with love by missifus <3
+  ```
+##  Made with love by missifus <3
