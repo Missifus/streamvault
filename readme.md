@@ -22,7 +22,7 @@ La arquitectura se basa en principios de software moderno, utilizando una capa d
 * **Panel de Administración Completo**: Una interfaz para que los administradores puedan listar, cambiar el rol y eliminar usuarios, así como gestionar todos los videos subidos.
 * **API RESTful Robusta**: **11 endpoints** funcionales que cubren la autenticación, la gestión de contenido y la administración de la plataforma.
 * **Arquitectura Desacoplada con Interfaces**: El uso de una capa de datos abstracta (`DataStore`) facilita la testabilidad y la posibilidad de cambiar el motor de base de datos en el futuro.
-* **Demostración de Concurrencia**: Se aprovechan las `goroutines` de Go para simular tareas en segundo plano (como el procesamiento de video) sin afectar la experiencia del usuario.
+* **Concurrencia**: Se aprovechan las `goroutines` de Go para tareas en segundo plano (como el procesamiento de video) sin afectar la experiencia del usuario.
 * **Configuración Sencilla**: Todo se configura a través de un único archivo `.env`.
 
 ## 🛠️ Construido Con
@@ -71,7 +71,7 @@ Asegúrate de tener instalado:
 
 ---
 
-## 📋 Servicios Web Implementados (11 en total)
+## 📋 Servicios Web
 
 | Método | Ruta                      | Descripción                                 | Protegido (Admin) |
 | :----- | :------------------------ | :------------------------------------------ | :---------------: |
