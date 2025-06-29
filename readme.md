@@ -88,5 +88,111 @@ Asegúrate de tener instalado:
 | `DELETE`| `/api/admin/users/{id}`   | Elimina un usuario del sistema.             |        **Sí** |
 
 ---
+### Digrama de clases 
+  ```mermaid
+classDiagram
+    direction BT
+    
+    class App {
+        <<Struct>>
+        +Store: DataStore
+        +UploadDir: string
+        +JwtSecret: string
+    }
+
+    class handler {
+        <<Struct>>
+        -app: App
+        +HandleRegisterUser(w, r)
+        +HandleLoginUser(w, r)
+        +HandleUploadVideo(w, r)
+        +HandleDeleteVideo(w, r)
+        +...
+    }
+
+    class DataStore {
+        <<Interface>>
+        +Init() error
+        +CreateUser(*User) error
+        +GetUserByEmail(string) (*User, error)
+        +CreateVideo(*Video) error
+        +GetAllVideos() ([]*Video, error)
+        +...
+    }
+
+    class PostgresStore {
+        <<Struct>>
+        -db: *sql.DB
+        +Init() error
+        +CreateUser(*User) error
+        +GetUserByEmail(string) (*User, error)
+        +CreateVideo(*Video) error
+        +GetAllVideos() ([]*Video, error)
+        +...
+    }
+
+    class User {
+        <<Model>>
+        +ID: int
+        +Username: string
+        +Email: string
+        +Role: string
+    }
+
+    class Video {
+        <<Model>>
+        +ID: int
+        +Title: string
+        +Category: string
+        +FilePath: string
+    }
+
+    class main_go["main.go"] {
+        <<Punto de Entrada>>
+        +main()
+    }
+    
+    main_go --> App : "Crea e inyecta dependencias"
+    main_go --> PostgresStore : "Crea la instancia concreta"
+    
+    App --> handler : "Es usado por"
+    handler "1" -- "1" App : "Contiene"
+
+    App o-- "1" DataStore : "Depende de (Inyección de Dependencia)"
+    
+    PostgresStore --|> DataStore : "Implementa"
+    
+    handler ..> DataStore : "Usa métodos de"
+    PostgresStore ..> User : "Manipula"
+    PostgresStore ..> Video : "Manipula"
+
+    class Frontend_JS["Frontend (JS)"] {
+        <<Conceptual>>
+    }
+
+    class app_js["app.js"] {
+        +main()
+        +router()
+    }
+
+    class api_js["api.js"] {
+        +request()
+        +loginUser()
+        +getVideos()
+    }
+
+    class ui_js["ui.js"] {
+        +showSection()
+        +updateAuthUI()
+        +renderVideos()
+    }
+
+    Frontend_JS o-- "1" app_js : "Orquesta"
+    app_js ..> api_js : "Usa para llamar al backend"
+    app_js ..> ui_js : "Usa para manipular el DOM"
+
+    api_js ..> handler : "Realiza peticiones HTTP a"
+    
+    ```
 
 ## Made with love by missifus <3
