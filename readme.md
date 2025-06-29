@@ -1,7 +1,7 @@
 # StreamVault
 <p align="center">
   <a href="#">
-    <img src="https://placehold.co/150x150/4f46e5/ffffff?text=SV" alt="Logo de StreamVault">
+    <img src="./assets/logo.png" alt="Logo de StreamVault" width="150">
   </a>
 
   <h3 align="center">Una plataforma de streaming de video autohospedada, desarrollada en Go.</h3>
