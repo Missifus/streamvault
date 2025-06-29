@@ -6,15 +6,7 @@
 
   <h3 align="center">Una plataforma de streaming de video autohospedada, desarrollada en Go.</h3>
 
-  <p align="center">
-    Control total sobre tu contenido, desde la subida hasta el streaming.
-    <br />
-    <a href="#"><strong>Explorar la documentación (próximamente)</strong></a>
-    ·
-    <a href="#">Reportar un Bug</a>
-    ·
-    <a href="#">Solicitar una Característica</a>
-  </p>
+
 </p>
 
 ## Acerca del Proyecto
