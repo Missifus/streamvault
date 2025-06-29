@@ -12,12 +12,23 @@ import (
 	"path/filepath"
 	"strconv"
 	"streamvault/internal/models"
+	"streamvault/internal/storage"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/mux"
 	"golang.org/x/crypto/bcrypt"
 )
+
+// App contiene las dependencias de la aplicación que los manejadores necesitan para funcionar.
+// Al inyectar dependencias de esta manera, el código se vuelve más modular y fácil de probar.
+
+type App struct {
+	Store                   storage.DataStore
+	UploadDir               string
+	JwtSecret               string
+	EnableEmailVerification bool
+}
 
 // handler es una estructura que encapsula la aplicación.
 // Los métodos de esta estructura (los manejadores) tendrán acceso a todas las dependencias de App.

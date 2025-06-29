@@ -17,7 +17,7 @@ La arquitectura se basa en principios de software moderno, utilizando una capa d
 
 ## 🚀 Características Principales
 
-* **Gestión de Usuarios Simplificada**: Registro y login directos mediante `username` y `email`.
+* **Gestión de Usuarios**: Registro y login directos mediante `username` y `email`.
 * **Roles de Usuario (Admin/User)**: Clara distinción entre usuarios normales y administradores con permisos específicos.
 * **Panel de Administración Completo**: Una interfaz para que los administradores puedan listar, cambiar el rol y eliminar usuarios, así como gestionar todos los videos subidos.
 * **API RESTful Robusta**: **11 endpoints** funcionales que cubren la autenticación, la gestión de contenido y la administración de la plataforma.
@@ -43,7 +43,7 @@ Para tener una copia local funcionando, sigue estos sencillos pasos.
 
 Asegúrate de tener instalado:
 * Go (versión 1.18+)
-* PostgreSQL
+* Un Servidor de Base de Datos PostgreSQL
 
 ### Instalación
 
@@ -52,10 +52,11 @@ Asegúrate de tener instalado:
     git clone git clone https://github.com/tu_usuario/streamvault.git
     ```
 2.  **Configura tu base de datos**
-    * Crea una base de datos en PostgreSQL (ej: `streaming_db`).
-    * Ejecuta el script SQL del proyecto para crear las tablas `users` y `videos`.
+    * Asegúrate de que tu servidor PostgreSQL esté corriendo.
+    * Crea una base de datos vacía (ej: streaming_db). El nombre debe coincidir con el que pondrás en tu archivo .env.
+    * ¡No necesitas ejecutar ningún script SQL! La aplicación creará las tablas necesarias automáticamente en su primer inicio.
 3.  **Configura las variables de entorno**
-    * Copia `env.example` (si existe) a un nuevo archivo llamado `.env`.
+    * Copia `env.example` a un nuevo archivo llamado `.env`.
     * Rellena `.env` con tus credenciales de la base de datos y un secreto para JWT.
 4.  **Instala las dependencias de Go**
     ```sh
@@ -66,7 +67,6 @@ Asegúrate de tener instalado:
     go run cmd/api/main.go
     ```
 6.  **Abre el frontend**
-    * Usa una extensión como "Live Server" en VS Code sobre el archivo `web/index.html` o sirve la carpeta `web/` con un servidor local (`python -m http.server`).
     * Accede a la aplicación a través de `http://localhost:PUERTO`.
 
 ---

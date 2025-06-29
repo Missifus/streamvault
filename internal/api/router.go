@@ -3,21 +3,10 @@ package api
 import (
 	"log"
 	"net/http"
-	"streamvault/internal/storage"
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 )
-
-// App contiene las dependencias de la aplicación que los manejadores necesitan para funcionar.
-// Al inyectar dependencias de esta manera, el código se vuelve más modular y fácil de probar.
-
-type App struct {
-	Store                   storage.DataStore
-	UploadDir               string
-	JwtSecret               string
-	EnableEmailVerification bool
-}
 
 // loggingMiddleware es un middleware simple que imprime en la consola cada petición recibida.
 // Esto es increíblemente útil para depurar problemas de enrutamiento.

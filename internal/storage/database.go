@@ -47,6 +47,41 @@ func NewPostgresStore(connStr string) (*PostgresStore, error) {
 	return &PostgresStore{db: db}, nil
 }
 
+func (s *PostgresStore) Init() error {
+	// Usamos 'CREATE TABLE IF NOT EXISTS' para que la operación sea segura
+	// y solo cree las tablas la primera vez que se ejecuta.
+	createUsersTableSQL := `
+    CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username VARCHAR(50) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
+        role VARCHAR(20) NOT NULL CHECK (role IN ('user', 'admin')),
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );`
+
+	createVideosTableSQL := `
+    CREATE TABLE IF NOT EXISTS videos (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        category VARCHAR(100) NOT NULL,
+        file_path VARCHAR(255) NOT NULL,
+        uploaded_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    );`
+
+	// Ejecutamos ambas consultas para crear las tablas.
+	if _, err := s.db.Exec(createUsersTableSQL); err != nil {
+		return fmt.Errorf("error al crear la tabla users: %w", err)
+	}
+
+	if _, err := s.db.Exec(createVideosTableSQL); err != nil {
+		return fmt.Errorf("error al crear la tabla videos: %w", err)
+	}
+
+	return nil
+}
+
 // CreateUser se ha simplificado para coincidir con la nueva estructura de la BD.
 func (s *PostgresStore) CreateUser(user *models.User) error {
 	query := `INSERT INTO users (username, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING id, created_at`

@@ -33,7 +33,10 @@ func main() {
 		log.Fatalf("Error fatal al inicializar el data store: %v", err)
 	}
 
-	log.Println("Conexión a la base de datos y store inicializado exitosamente.")
+	if err := store.Init(); err != nil {
+		log.Fatalf("Error fatal al inicializar las tablas de la base de datos: %v", err)
+	}
+	log.Println("Conexión a la base de datos y tablas verificadas/creadas exitosamente.")
 
 	if _, err := os.Stat(uploadDir); os.IsNotExist(err) {
 		os.Mkdir(uploadDir, 0755)
