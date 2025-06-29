@@ -68,6 +68,11 @@ Asegúrate de tener instalado:
     ```
 6.  **Abre el frontend**
     * Accede a la aplicación a través de `http://localhost:PUERTO`.
+  
+7.  **Crea un primer usuario y cambia manualmente su rol a admin, en la base de datos **
+    ```sql
+    UPDATE users SET role = 'admin' WHERE email = 'correo_del_usuario@ejemplo.com'; 
+    ```
 
 ---
 
